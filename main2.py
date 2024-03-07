@@ -16,6 +16,25 @@ from streamlit_modal import Modal
 
 # Assuming dotenv is used for environment variable management
 from dotenv import load_dotenv
+from streamlit_extras.add_vertical_space import add_vertical_space
+
+# Sidebar contents
+with st.sidebar:
+    st.title('Common questions asked during pregnancy')
+
+    # Path to your image file
+    image_path = "farm.webp"
+
+    # Display the image
+    st.image(image_path, caption='Helping teen mothers figure out their way through pregnancy', use_column_width=True)
+    st.markdown('''
+    ## About
+    EmpowerBot is an interactive chatbot application specifically designed to offer support and guidance to teen mothers throughout their pregnancy journey. This Streamlit-powered chatbot leverages cutting-edge technologies to provide comprehensive answers to a wide array of questions related to pregnancy.
+
+    Built by ['Terah Jones Alukwe', 'Wawuda Natasha', 'Sila Silverster', 'Silas']
+    ''')
+
+    add_vertical_space(3)
 
 load_dotenv()
 
@@ -71,7 +90,7 @@ def predict_disease_or_pest_or_healthy(image_bytes, plant_class):
     """Placeholder for model prediction function for disease, pest, or healthy status."""
     try:
         # Load the model for predicting disease, pest, or healthy status
-        model_path = 'keras_model.h5'
+        model_path = 'model.h5'
         if os.path.exists(model_path):
             model = tf.keras.models.load_model(model_path)
         else:
@@ -80,7 +99,7 @@ def predict_disease_or_pest_or_healthy(image_bytes, plant_class):
 
         # Preprocess the image bytes for disease, pest, or healthy status prediction
         image = tf.image.decode_jpeg(image_bytes.getvalue(), channels=3)
-        image = tf.image.resize(image, [224, 224])  # Resize the image
+        image = tf.image.resize(image, [128, 128])  # Resize the image
         image = tf.expand_dims(image, axis=0)  # Add batch dimension
         image = tf.cast(image, tf.float32)  # Convert image to float32
 
@@ -88,10 +107,10 @@ def predict_disease_or_pest_or_healthy(image_bytes, plant_class):
         predictions = model.predict(image)  # Make predictions based on the preprocessed input
 
         class_names = [
-            'gumosis_cashew', 'healthy_cashew', 'leaf_miner_cashew', 'anthracnose_cashew', 'red_rust_cashew',
-            'bacterial_blight_cassava', 'brown_spot_cassava', 'green_mite_cassava', 'healthy_cassava', 'mosaic_cassava',  # Cassava
-            'fall_armyworm-maize', 'grasshopper_maize', 'healthy_maize', 'leaf_beetle_maize', 'leaf_blight_maize', 'leaf_spot_maize',  # Maize
-            'leaf_blight_tomato', 'leaf_curl_tomato', 'septoria_leaf_spot_tomato', 'verticulium_wilt_tomato'  # Tomato
+            'anthracnose_cashew', 'healthy_cashew', 'leaf_miner_cashew','gumosis_cashew', 'red_rust_cashew', # Cashew
+            'bacterial_blight_cassava', 'brown_spot_cassava', 'green_mite_cassava', 'healthy_cassava', 'mosaic_cassava', # Cassava
+            'fall_armyworm_maize', 'grasshopper_maize', 'healthy_maize', 'leaf_beetle_maize', 'leaf_blight_maize', 'leaf_spot_maize', 'streak_virus_maize',  # Maize
+            'healthy_tomato', 'leaf_blight_tomato', 'leaf_curl_tomato', 'septoria_leaf_spot_tomato', 'verticulium_wilt_tomato'  # Tomato
         ]
         predicted_class = class_names[np.argmax(predictions)]  # Decode the predicted output
 
@@ -303,7 +322,6 @@ def main():
                     folium.PolyLine(
                         locations=[[user_coordinates[0], user_coordinates[1]], [nearest_agrocrop['lat'], nearest_agrocrop['lng']]],
                                     color='red').add_to(agrocrop_map)
-
                     # Display the map
                     st.write(agrocrop_map)
 
@@ -360,3 +378,4 @@ def get_nearest_agrocrop(user_coordinates):
 
 if __name__ == "__main__":
     main()
+
