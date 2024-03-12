@@ -1,5 +1,5 @@
 import streamlit as st
-import main
+import Main
 import about_us
 import account
 import contact_us   
@@ -31,9 +31,9 @@ with st.sidebar:
     Built by ['Terah Jones Alukwe', 'Wawuda Natasha', 'Sila Silverster', 'Silas']
     ''')
 if(st.session_state["page"] == "home"):
-    main.main()
+    Main.main()
 if(st.session_state["page"] == "account"):
-    account.main()
+    account.main_()
 if(st.session_state["page"] == "about"):
     about_us.main()
 if(st.session_state["page"] == "contact"):
