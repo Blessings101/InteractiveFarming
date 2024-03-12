@@ -1,3 +1,4 @@
+import webbrowser
 import streamlit as st
 import tensorflow as tf
 from PIL import Image
@@ -10,46 +11,33 @@ import pydeck as pdk
 import os
 import json
 import io
+import recommendations
 from geopy.exc import GeocoderUnavailable
 import numpy as np
 from streamlit_modal import Modal
-
+import urllib.parse
 # Assuming dotenv is used for environment variable management
 from dotenv import load_dotenv
 from streamlit_extras.add_vertical_space import add_vertical_space
-
-# Sidebar contents
-with st.sidebar:
-    st.title('Common questions asked during pregnancy')
-
-    # Path to your image file
-    image_path = "farm.webp"
-
-    # Display the image
-    st.image(image_path, caption='Helping teen mothers figure out their way through pregnancy', use_column_width=True)
-    st.markdown('''
-    ## About
-    EmpowerBot is an interactive chatbot application specifically designed to offer support and guidance to teen mothers throughout their pregnancy journey. This Streamlit-powered chatbot leverages cutting-edge technologies to provide comprehensive answers to a wide array of questions related to pregnancy.
-
-    Built by ['Terah Jones Alukwe', 'Wawuda Natasha', 'Sila Silverster', 'Silas']
-    ''')
-
-    add_vertical_space(3)
-
 load_dotenv()
+
+
 
 modal = Modal(key="Demo Key",title="Feedback")
 
 # Load API keys from environment
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 
-# Initialize API clients
-gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY) if GOOGLE_MAPS_API_KEY else None
-
 # Check for API key loading
 if not GOOGLE_MAPS_API_KEY:
     st.error("Google Maps API key is missing. Please check your .env file.")
     st.stop()
+    
+    
+# Initialize API clients
+gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY) if GOOGLE_MAPS_API_KEY else None
+
+
 
 # Placeholder for model prediction function for plant class
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
@@ -57,7 +45,7 @@ def predict_plant_class(image_bytes):
     """Placeholder for model prediction function for plant class."""
     try:
         # Load the model for predicting plant class
-        model_path = 'model.h5'
+        model_path = 'models/model.h5'
         if os.path.exists(model_path):
             model = tf.keras.models.load_model(model_path)
         else:
@@ -83,14 +71,13 @@ def predict_plant_class(image_bytes):
         st.error(f"An error occurred during plant class prediction: {e}")
         return None
 
-
 # Placeholder for model prediction function for disease, pest, or healthy status
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def predict_disease_or_pest_or_healthy(image_bytes, plant_class):
     """Placeholder for model prediction function for disease, pest, or healthy status."""
     try:
         # Load the model for predicting disease, pest, or healthy status
-        model_path = 'model.h5'
+        model_path = 'models/model.h5'
         if os.path.exists(model_path):
             model = tf.keras.models.load_model(model_path)
         else:
@@ -248,115 +235,6 @@ def fetch_information(query):
         st.error(f"An error occurred while fetching information: {e}")
         return None
 
-# Main app interface
-def main():
-    st.title('Welcome to the Recommendation App')
-
-    uploaded_file = st.file_uploader("Choose an image...", type="jpg")
-    if uploaded_file is not None:
-        # Load and preprocess the image
-        image_bytes = load_and_preprocess_image(uploaded_file)
-
-        # Display the uploaded image
-        st.image(image_bytes, caption='Uploaded Image.', use_column_width=True)
-
-        # Predict the plant class
-        plant_class = predict_plant_class(image_bytes)
-
-        if plant_class:
-            # Predict the disease, pest, or healthy status based on the predicted plant class
-            disease_or_pest_or_healthy = predict_disease_or_pest_or_healthy(image_bytes, plant_class)
-
-            # Display predicted plant class and disease, pest, or healthy status
-            st.write("Predicted Plant Class:", plant_class)
-            if disease_or_pest_or_healthy:
-                st.write("Disease or Pest or healthy:", disease_or_pest_or_healthy)
-            else:
-                st.error("Failed to predict the disease, pest or healthy class.")
-        else:
-            st.error("Failed to predict the plant class.")
-
-        # Assuming fetching recommendations based on predictions
-        if disease_or_pest_or_healthy:
-            # Fetch information about the disease or pest
-            disease_info = fetch_disease_info(disease_or_pest_or_healthy)
-            st.write("Information about: ", disease_or_pest_or_healthy)
-            st.write(disease_info)
-
-            # Recommendations on how to prevent the disease
-            prevention_recommendations = fetch_prevention_recommendations(disease_or_pest_or_healthy)
-            st.write("Recommendations to prevent: ", disease_or_pest_or_healthy)
-            for recommendation in prevention_recommendations:
-                st.write(recommendation)
-
-        # Get user input for their location only once
-        location_name = st.text_input("Enter your location name (e.g., Nakuru):", key="location_input")
-        if location_name:
-            # Get the coordinates for the specified location
-            user_coordinates = get_coordinates(location_name)
-
-            if user_coordinates:
-                st.write(f"Coordinates for {location_name}:", user_coordinates)
-
-                # Get the nearest agrocrop center
-                nearest_agrocrop = get_nearest_agrocrop(user_coordinates)
-
-                if nearest_agrocrop:
-                    st.write("Nearest Agrocrop Center:", nearest_agrocrop)
-
-                    # Create a Folium map
-                    agrocrop_map = folium.Map(location=[user_coordinates[0], user_coordinates[1]], zoom_start=15)
-
-                    # Add a marker for the user's location
-                    folium.Marker(location=[user_coordinates[0], user_coordinates[1]],
-                                  popup="Your Location").add_to(agrocrop_map)
-
-                    # Add a marker for the nearest agrocrop center
-                    folium.Marker(location=[nearest_agrocrop['lat'], nearest_agrocrop['lng']],
-                                  popup="Nearest Agrocrop Center").add_to(agrocrop_map)
-
-                    # Add tile layer for better visualization
-                    folium.TileLayer('openstreetmap').add_to(agrocrop_map)
-
-                    # Draw a line between user's location and nearest agrocrop center
-                    folium.PolyLine(
-                        locations=[[user_coordinates[0], user_coordinates[1]], [nearest_agrocrop['lat'], nearest_agrocrop['lng']]],
-                                    color='red').add_to(agrocrop_map)
-                    # Display the map
-                    st.write(agrocrop_map)
-
-                else:
-                    st.warning(f"No nearby agrocrop centers found for {location_name}")
-                    # Display a map centered around the specified location
-                    st.map({'lat': [user_coordinates[0]], 'lon': [user_coordinates[1]]}, zoom=15)
-
-            else:
-                st.error("Error getting coordinates. Please check the location name.")
-        else:
-            st.info("Please enter a location name to find the nearest agrocrop center.")
-            # Placeholder for user feedback loop
-            feedback = st.text_area("Feedback on recommendations:")
-            if st.button("Submit Feedback"):
-                st.write("Thank you for your feedback!")
-
-
-# Function to get coordinates from location name
-@st.cache_data
-def get_coordinates(location_name):
-    geolocator = Nominatim(user_agent="agrocrop_locator")
-    try:
-        location = geolocator.geocode(location_name)
-        if location:
-            return location.latitude, location.longitude
-        else:
-            return None
-    except GeocoderUnavailable:
-        st.error("Geocoding service is currently unavailable. Please try again later.")
-        return None
-    except Exception as e:
-        st.error(f"Error occurred while fetching coordinates: {str(e)}")
-        return None
-
 
 # Function to get the nearest agrocrop center
 def get_nearest_agrocrop(user_coordinates):
@@ -376,6 +254,87 @@ def get_nearest_agrocrop(user_coordinates):
         st.error("Google Maps API error: REQUEST_DENIED. You must enable Billing on the Google Cloud Project to use the Google Maps Places API. Learn more at https://developers.google.com/maps/gmp-get-started")
         return None
 
-if __name__ == "__main__":
-    main()
 
+# Function to get coordinates from location name
+@st.cache_data
+def get_coordinates(location_name):
+    geolocator = Nominatim(user_agent="agrocrop_locator")
+    try:
+        location = geolocator.geocode(location_name)
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None
+    except GeocoderUnavailable:
+        st.error("Geocoding service is currently unavailable. Please try again later.")
+        return None
+    except Exception as e:
+        st.error(f"Error occurred while fetching coordinates: {str(e)}")
+        return None
+    
+# Function to get recommendations 
+def get_crop_recommendations(crop_pest_name):
+    return recommendations.Recommendation.crop_recommendations.get(crop_pest_name, None)
+# def display_crop_recommendation(crop_recommendation):
+#     st.title("Disease Information")
+#     st.markdown("## Disease: {}".format(crop_recommendation['disease']))
+#     st.markdown("### Cause")
+#     st.markdown(crop_recommendation['cause'])
+
+#     st.markdown("### Prevention")
+#     st.markdown(crop_recommendation['prevention'])
+
+#     st.markdown("### Treatment")
+    # st.markdown(crop_recommendation['treatment'])
+
+
+def fetch_information(query):
+    try:
+        # Perform a Google search and retrieve search results
+        search_results = google_search(query)
+        if search_results:
+            # Extract relevant information from the search results
+            information = extract_information(search_results)
+            return information
+        else:
+            return None
+    except Exception as e:
+        st.error(f"An error occurred while fetching information: {e}")
+        return None
+
+# def display_crop_recommendation(disease_info):
+#     st.title("Disease Information")
+
+#     st.markdown("## Disease: {}".format(disease_info['disease']))
+#     st.markdown("### Cause")
+#     st.markdown(disease_info['cause'])
+
+#     st.markdown("### Prevention")
+#     st.markdown(disease_info['prevention'])
+
+#     st.markdown("### Treatment")
+#     st.markdown(disease_info['treatment'])
+
+#     if st.button('Google Search for Prevention and Treatment'):
+#         query = "{} prevention, treatment, and most common sign of ".format(disease_info['disease'])
+#         webbrowser.open_new_tab('https://www.google.com/search?q=' + query)
+
+def display_crop_recommendation(disease_info):
+    st.title("Disease Information")
+
+    st.markdown("## Disease: {}".format(disease_info['disease']))
+    st.markdown("### Cause")
+    st.markdown(disease_info['cause'])
+
+    st.markdown("### Prevention")
+    st.markdown(disease_info['prevention'])
+
+    st.markdown("### Treatment")
+    st.markdown(disease_info['treatment'])
+
+    query = "{} prevention and treatment of".format(disease_info['disease'])
+    redirect_url = f"https://www.google.com/search?q={query}"
+    if(st.button("More Recommendations")):
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={redirect_url}" target="_blank">', unsafe_allow_html=True)
+
+# ...
