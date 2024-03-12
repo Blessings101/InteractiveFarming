@@ -33,10 +33,23 @@ def login_form():
     
     
     
+def main():
+    st.title("Account Page")
+
+    col1, col2 = st.columns(2)
+
+    signup_button = col1.button('Signup', key="signup")
+    login_button = col2.button('Login', key="login")
+
+    if signup_button:
+        st.write(signup_form())
+
+    if login_button:
+        st.write(login_form())
     
     
-    
-    
+if __name__ == "__main__":
+    main()
     
     
     

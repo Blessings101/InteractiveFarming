@@ -1,5 +1,8 @@
 import streamlit as st
 import main
+import about_us
+import account
+import contact_us   
 st.header("AgroScan")
 
 if "page" not in st.session_state:
@@ -30,9 +33,9 @@ with st.sidebar:
 if(st.session_state["page"] == "home"):
     main.main()
 if(st.session_state["page"] == "account"):
-    st.write("Welcome to the Account page")
+    account.main()
 if(st.session_state["page"] == "about"):
-    st.write("Welcome to the about page")
+    about_us.main()
 if(st.session_state["page"] == "contact"):
-    st.write("Welcome to the contact page")
+    contact_us.main()
     

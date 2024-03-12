@@ -17,4 +17,7 @@ def create_contact_form():
         if submit_button:
             st.success("Thank you for your message. We will get back to you soon.")
 
-create_contact_form()
+def main():
+    create_contact_form()
+if __name__ == "__main__":
+    main()

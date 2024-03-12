@@ -22,4 +22,8 @@ def create_about_us_page():
     We are passionate about using technology to solve real-world problems and are constantly working to improve our system.
     """, unsafe_allow_html=True)
 
-create_about_us_page()
+def main():
+    create_about_us_page()
+    
+if __name__ == "__main__":
+    main()
